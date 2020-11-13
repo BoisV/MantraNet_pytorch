@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+Mantra_net_pytorch/dataset/*
+Mantra_net_pytorch/.vscode/*
