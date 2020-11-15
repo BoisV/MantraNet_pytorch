@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 
-Mantra_net_pytorch/dataset/*
-Mantra_net_pytorch/.vscode/*
+dataset/*
+.vscode/*
