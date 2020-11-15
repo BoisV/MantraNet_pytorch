@@ -30,8 +30,8 @@ def get_logger(verbosity=1, name=None):
     return logger
 
 
-def findLastCheckpoint(args):
-    file_list = glob.glob(os.path.join(args.saveDir, args.model, ('model_*.pth')))
+def findLastCheckpoint(saveDir, model):
+    file_list = glob.glob(os.path.join(saveDir, model, ('model_*.pth')))
     if file_list:
         epochs_exist = []
         for file_ in file_list:
@@ -43,7 +43,7 @@ def findLastCheckpoint(args):
     model = None
     if initial_epoch > 0:
         model = torch.load(os.path.join(
-            args.saveDir, args.model, 'model_%03d.pth' % initial_epoch))
+            saveDir, model, 'model_%03d.pth' % initial_epoch))
     return (initial_epoch, model)
 
 

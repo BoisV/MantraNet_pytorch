@@ -9,9 +9,6 @@ from torchvision.transforms import transforms
 from utils import utils, dataset
 
 
-
-
-
 parser = argparse.ArgumentParser(description='Mantra Net')
 parser.add_argument('--dataDir', default='./data', type=str,
                     help='choose the dir of dataset')
@@ -28,29 +25,18 @@ parser.add_argument('--number', default=100,
 args = parser.parse_args()
 
 logger = utils.get_logger()
-if __name__ == "__main__":
-    logger.info('start ' + args.mode + 'ing ' + args.model)
-    initial_epoch,  model= utils.findLastCheckpoint(args)
+
+
+def train_IMTF(saveDir, dataset_train, dataset_val, batch_size, batches, MAX_EPOCH, ):
+    initial_epoch,  model = utils.findLastCheckpoint(saveDir, model='IMTFE')
     if model is not None:
         logger.info('resuming by loading epoch %03d' % initial_epoch)
     else:
-        if args.model == 'IMTFE':
-            model = IMTFE(Featex=FeatexVGG16(), in_size=128)
-        elif args.model == 'MantraNet':
-            model = MantraNet(Featex=FeatexVGG16(), pool_size_list=[7,15,31])
+        model = IMTFE(Featex=FeatexVGG16(), in_size=128)
 
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '0,3'
     model = model.cuda()
     model = nn.DataParallel(model)
 
-    batch_size = 64
-    batches = 1000
-    MAX_EPOCH = 100
-
-    transform = transforms.Compose([transforms.RandomCrop(size=(128,128)),
-                                    transforms.ToTensor()])
-    dataset_train = dataset.MyDataset(root_dir=os.path.join(args.dataDir, 'train'), names_file=os.path.join(args.dataDir, 'train', 'train.txt'), transform=transform)
-    dataset_val = dataset.MyDataset(root_dir=os.path.join(args.dataDir, 'val'), names_file=os.path.join(args.dataDir, 'val', 'val.txt'), transform=transform)
     train_iter = DataLoader(
         dataset_train, batch_size=batch_size, num_workers=4, shuffle=True)
     val_iter = DataLoader(dataset_val, batch_size=batch_size, num_workers=4)
@@ -76,10 +62,12 @@ if __name__ == "__main__":
             scheduler.step()
             if isinstance(model, nn.DataParallel):
                 weight = model.module.Featex.combinedConv.bayarConv2d.weight
-                model.module.Featex.combinedConv.bayarConv2d.weight = nn.Parameter(bayarConstraint(weight))
+                model.module.Featex.combinedConv.bayarConv2d.weight = nn.Parameter(
+                    bayarConstraint(weight))
             else:
                 weight = model.Featex.combinedConv.bayarConv2d.weight
-                model.Featex.combinedConv.bayarConv2d.weight = nn.Parameter(bayarConstraint(weight))
+                model.Featex.combinedConv.bayarConv2d.weight = nn.Parameter(
+                    bayarConstraint(weight))
             cuda.empty_cache()
             loss_epochs += loss
             n_batch += 1
@@ -98,10 +86,38 @@ if __name__ == "__main__":
             Y_pred = model(X)
             acc += utils.evalute_acc(Y_pred, Y)
         logger.info(
-                'Epoch:[{}/{}]\t loss={:.5f}\t acc={:.3f}'.format(epoch, MAX_EPOCH, loss_epochs/MAX_EPOCH, acc/len(dataset_val)))
+            'Epoch:[{}/{}]\t loss={:.5f}\t acc={:.3f}'.format(epoch, MAX_EPOCH, loss_epochs/MAX_EPOCH, acc/len(dataset_val)))
         if isinstance(model, nn.DataParallel):
             state = model.module.Featex.state_dict()
         else:
             state = model.Featex.state_dict()
-        torch.save(state,
-                   os.path.join(args.saveDir, args.name, ('model_%03d.pth'%(epoch+1))))
+        torch.save(state, os.path.join(
+            args.saveDir, args.name, ('model_%03d.pth' % (epoch+1))))
+
+
+if __name__ == "__main__":
+    logger.info('start ' + args.mode + 'ing ' + args.model)
+    if args.model == 'IMTFE':
+        if args.mode == 'train':
+            transform = transforms.Compose([transforms.RandomCrop(size=(128, 128)),
+                                            transforms.ToTensor()])
+            dataset_train = dataset.MyDataset(root_dir=os.path.join(args.dataDir, 'train'), names_file=os.path.join(
+                args.dataDir, 'train', 'train.txt'), transform=transform)
+            dataset_val = dataset.MyDataset(root_dir=os.path.join(args.dataDir, 'val'), names_file=os.path.join(
+                args.dataDir, 'val', 'val.txt'), transform=transform)
+            train_IMTF(saveDir=args.saveDir, dataset_train=dataset_train,
+                       dataset_val=dataset_val, batch_size=64, batches=1000, MAX_EPOCH=100)
+        elif args.mode == 'test':
+            pass
+        else:
+            logger.warn('mode should be train or test')
+            raise Exception('mode should be train or test')
+    elif args.model == 'MantraNet':
+        if args.mode == 'train':
+            pass
+        elif args.mode == 'test':
+            pass
+        else:
+            pass
+    else:
+        pass
