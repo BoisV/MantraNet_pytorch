@@ -2,12 +2,16 @@ import glob
 import os
 import logging
 import re
-
+import datetime
 import torch
 
-def get_logger(filename, verbosity=1, name=None):
-    if not os.path.exists(filename):
-        open(filename, mode='w+')
+def get_logger(verbosity=1, name=None):
+    str_date = datetime.datetime.now().strftime('%Y-%m-%d')
+    log_path = os.path.join(os.getcwd(), 'log')
+    log_name = os.path.join(log_path, (str_date+'.log'))
+    if not os.path.exists(log_name):
+        open(log_name, mode='w+')
+    
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
     formatter = logging.Formatter(
         "[%(asctime)s][%(filename)s][line:%(lineno)d][%(levelname)s] %(message)s"
@@ -15,7 +19,7 @@ def get_logger(filename, verbosity=1, name=None):
     logger = logging.getLogger(name)
     logger.setLevel(level_dict[verbosity])
 
-    fh = logging.FileHandler(filename, "a+")
+    fh = logging.FileHandler(log_name, "a+")
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
@@ -26,8 +30,8 @@ def get_logger(filename, verbosity=1, name=None):
     return logger
 
 
-def findLastCheckpoint(save_dir, name):
-    file_list = glob.glob(os.path.join(save_dir, name, ('model_*.pth')))
+def findLastCheckpoint(args):
+    file_list = glob.glob(os.path.join(args.saveDir, args.model, ('model_*.pth')))
     if file_list:
         epochs_exist = []
         for file_ in file_list:
@@ -36,7 +40,11 @@ def findLastCheckpoint(save_dir, name):
         initial_epoch = max(epochs_exist)
     else:
         initial_epoch = 0
-    return initial_epoch
+    model = None
+    if initial_epoch > 0:
+        model = torch.load(os.path.join(
+            args.saveDir, args.model, 'model_%03d.pth' % initial_epoch))
+    return (initial_epoch, model)
 
 
 def evalute_acc(Y_pred, Y):

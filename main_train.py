@@ -10,31 +10,34 @@ from utils import utils, dataset
 
 
 
-logger = utils.get_logger('./log/train.log')
+
 
 parser = argparse.ArgumentParser(description='Mantra Net')
 parser.add_argument('--dataDir', default='./data', type=str,
                     help='choose the dir of dataset')
 parser.add_argument('--saveDir', default='./checkpoints',
                     type=str, help='choose the saveDir')
-parser.add_argument('--name', default='IMTFE',
+parser.add_argument('--model', default='IMTFE',
                     type=str, help='select IMTFE or MantraNet')
+parser.add_argument('--mode', default='train',
+                    type=str, help='select train or test')
 parser.add_argument('--patch_size', default=256,
                     type=int, help='set patch size')
 parser.add_argument('--number', default=100,
                     type=int, help='set patches number')
 args = parser.parse_args()
 
-
+logger = utils.get_logger()
 if __name__ == "__main__":
-    
-    model = IMTFE(Featex=FeatexVGG16(), in_size=128)
-    initial_epoch = utils.findLastCheckpoint(
-        save_dir=args.saveDir, name='IMTFE')  # IMTFE or MantraNet
-    if initial_epoch > 0:
-        print('resuming by loading epoch %03d' % initial_epoch)
-        model = torch.load(os.path.join(
-            args.saveDir, 'model_%03d.pth' % initial_epoch))
+    logger.info('start ' + args.mode + 'ing ' + args.model)
+    initial_epoch,  model= utils.findLastCheckpoint(args)
+    if model is not None:
+        logger.info('resuming by loading epoch %03d' % initial_epoch)
+    else:
+        if args.model == 'IMTFE':
+            model = IMTFE(Featex=FeatexVGG16(), in_size=128)
+        elif args.model == 'MantraNet':
+            model = MantraNet(Featex=FeatexVGG16(), pool_size_list=[7,15,31])
 
     # os.environ['CUDA_VISIBLE_DEVICES'] = '0,3'
     model = model.cuda()
@@ -82,7 +85,7 @@ if __name__ == "__main__":
             n_batch += 1
             acc = utils.evalute_acc(Y_pred, Y)
             logger.info(
-                'Epoch:[{}/{}] batch_idx:{} lr:{:.5f}\t loss={:.5f}\t acc={:.5f}'.format(epoch, MAX_EPOCH, scheduler.get_lr()[0], n_batch, loss, acc))
+                'Epoch:[{}/{}] batch_idx:{} lr:{:.5f}\t loss={:.5f}\t acc={:.5f}'.format(epoch, MAX_EPOCH, n_batch, scheduler.get_lr()[0], loss, acc))
             if n_batch > batches:
                 break
         cuda.empty_cache()
@@ -101,4 +104,4 @@ if __name__ == "__main__":
         else:
             state = model.Featex.state_dict()
         torch.save(state,
-                   os.path.join(args.saveDir, args.name, ('model_%d.pth'%(epoch))))
+                   os.path.join(args.saveDir, args.name, ('model_%03d.pth'%(epoch+1))))
