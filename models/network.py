@@ -1,10 +1,9 @@
 import torch
-from torch import batch_norm, nn, set_flush_denormal
+from torch import nn
 from torch.nn import functional as F
 from collections import OrderedDict
 
-from torch.nn.modules import module
-from convlstm import ConvLSTM
+from .convlstm import ConvLSTM
 
 
 class SRMConv2D(nn.Module):
@@ -47,9 +46,6 @@ class SRMConv2D(nn.Module):
     def forward(self, X):
         # X1 =
         return F.conv2d(X, self.SRMWeights, stride=self.stride, padding=self.padding)
-
-
-# def BayarConstraint(params):
 
 
 class CombinedConv2D(nn.Module):

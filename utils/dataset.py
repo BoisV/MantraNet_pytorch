@@ -35,8 +35,8 @@ class MyDataset(Dataset):
         return image, label
 
 
-if __name__ == "__main__":
-    train_dataset = MyDataset(root_dir='./dataset/train',
-                              names_file='./dataset/train/train.txt',
-                              transform=None)
-    print(len(train_dataset))
+# if __name__ == "__main__":
+#     train_dataset = MyDataset(root_dir='./dataset/train',
+#                               names_file='./dataset/train/train.txt',
+#                               transform=None)
+#     print(len(train_dataset))
