@@ -33,8 +33,8 @@ def get_logger(verbosity=1, name=None):
     return logger
 
 
-def findLastCheckpoint(args):
-    file_dir = os.path.join(args.saveDir, args.model)
+def findLastCheckpoint(saveDir, model):
+    file_dir = os.path.join(saveDir, model)
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     file_list = glob.glob(os.path.join(file_dir, ('model_*.pth')))
