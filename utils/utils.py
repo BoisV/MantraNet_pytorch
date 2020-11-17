@@ -5,13 +5,16 @@ import re
 import datetime
 import torch
 
+
 def get_logger(verbosity=1, name=None):
     str_date = datetime.datetime.now().strftime('%Y-%m-%d')
     log_path = os.path.join(os.getcwd(), 'log')
     log_name = os.path.join(log_path, (str_date+'.log'))
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
     if not os.path.exists(log_name):
         open(log_name, mode='w+')
-    
+
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
     formatter = logging.Formatter(
         "[%(asctime)s][%(filename)s][line:%(lineno)d][%(levelname)s] %(message)s"
@@ -30,8 +33,11 @@ def get_logger(verbosity=1, name=None):
     return logger
 
 
-def findLastCheckpoint(saveDir, model):
-    file_list = glob.glob(os.path.join(saveDir, model, ('model_*.pth')))
+def findLastCheckpoint(args):
+    file_dir = os.path.join(args.saveDir, args.model)
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
+    file_list = glob.glob(os.path.join(file_dir, ('model_*.pth')))
     if file_list:
         epochs_exist = []
         for file_ in file_list:
